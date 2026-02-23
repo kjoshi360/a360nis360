@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a360nis360-backend
+  namespace: a360nis360
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: a360nis360-backend
+  template:
+    metadata:
+      labels:
+        app: a360nis360-backend
+    spec:
+      containers:
+        - name: backend
+          image: a360nis360-backend:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: a360nis360-config
+            - secretRef:
+                name: a360nis360-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 20

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a360nis360-config
+  namespace: a360nis360
+data:
+  PORT: "3000"
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "a360nis360-backend"
+  KAFKA_WEBHOOK_TOPIC: "webhook.events"
