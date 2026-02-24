@@ -9,6 +9,7 @@ COPY prisma ./prisma
 RUN npx prisma generate
 
 COPY src ./src
+COPY public ./public
 COPY .env.example ./
 
 EXPOSE 3000

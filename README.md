@@ -1,68 +1,51 @@
 # a360nis360
 
-Production-ready backend foundation for an India-first, globally extensible accounting and compliance platform.
+Production-ready modular-monolith platform for India-first and global-ready accounting + compliance.
 
 ## What is included
 
-- **Modular monolith backend** in Node.js + Express
-- **PostgreSQL + Prisma** data model covering accounting, GST, E-Way Bill, TDS, payroll, inventory, audit, and reporting support
-- **Kafka integration** for webhook/event pipeline
-- **Redis integration** for fast webhook queue buffering
-- **REST APIs** for health, entities, and webhook ingestion
-- **Docker support** (single-service Dockerfile + local multi-service docker-compose)
-- **Kubernetes manifests** for app deployment basics
-- **Postman collection** for quick API testing
+- **Backend API (Node.js + Express)**
+- **Frontend control center** for all current backend features
+- **PostgreSQL + Prisma** enterprise schema (accounting, GST, E-Way, TDS, payroll, inventory, audit)
+- **Kafka** producer integration for webhook eventing
+- **Redis** integration for webhook buffering
+- **Docker + Docker Compose** for local runtime
+- **Kubernetes manifests** for deployment baseline
+- **Postman collection** for API testing
+
+## Feature coverage
+
+### Frontend (`/`)
+
+- API health check UI (`GET /health`)
+- Entity create form (`POST /api/v1/entities`)
+- Entity list viewer (`GET /api/v1/entities`)
+- Webhook ingest form (`POST /api/v1/webhooks/ingest`)
+
+### Backend
+
+- Health endpoint with DB/Redis status
+- Modular routes (`entities`, `webhooks`)
+- Kafka + Redis adapters with graceful fallback
 
 ## Project structure
 
-- `src/` — API and module code
-- `prisma/schema.prisma` — relational schema
-- `docker-compose.yml` — local stack (app + postgres + redis + kafka)
-- `k8s/` — deployment manifests
-- `postman/a360nis360.postman_collection.json` — API collection
-- `docs/executive-brief.md` — high-level product strategy brief
+- `public/` — frontend UI files (`index.html`, `styles.css`, `app.js`)
+- `src/` — backend app and modules
+- `prisma/schema.prisma` — PostgreSQL schema model
+- `docker-compose.yml` — local multi-service setup
+- `k8s/` — K8s manifests
+- `postman/a360nis360.postman_collection.json` — API requests
 
 ## Quick start
 
-1. Copy environment file:
+```bash
+cp .env.example .env
+npm install
+docker compose up -d postgres redis zookeeper kafka
+npm run prisma:generate
+npx prisma db push
+npm run dev
+```
 
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Start infrastructure (optional if using existing services):
-
-   ```bash
-   docker compose up -d postgres redis zookeeper kafka
-   ```
-
-4. Generate Prisma client and apply schema:
-
-   ```bash
-   npm run prisma:generate
-   npx prisma db push
-   ```
-
-5. Run the API:
-
-   ```bash
-   npm run dev
-   ```
-
-## API endpoints
-
-- `GET /health`
-- `POST /api/v1/entities`
-- `GET /api/v1/entities`
-- `POST /api/v1/webhooks/ingest`
-
-## Notes
-
-- Kafka and Redis are optional at runtime; API still starts if either dependency is unavailable.
-- Schema is designed to evolve into separated services without breaking the modular-monolith approach.
+Open: `http://localhost:3000`
