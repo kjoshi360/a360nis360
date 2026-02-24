@@ -1,0 +1,75 @@
+{
+  "info": {
+    "name": "a360nis360 Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "REST API and webhook endpoints for the modular monolith backend."
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Create Entity",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Acme India Pvt Ltd\",\n  \"countryCode\": \"IN\",\n  \"baseCurrency\": \"INR\",\n  \"financialYearStart\": \"2025-04-01\",\n  \"gstRegistrationType\": \"regular\",\n  \"gstin\": \"22AAAAA0000A1Z5\",\n  \"pan\": \"AAAAA0000A\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entities",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "entities"]
+        }
+      }
+    },
+    {
+      "name": "List Entities",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entities",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "entities"]
+        }
+      }
+    },
+    {
+      "name": "Webhook Ingest",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"gstn\",\n  \"event\": \"eway_bill.created\",\n  \"payload\": {\n    \"entityId\": \"f8708b0d-e764-40f5-99d7-ebef1b6f1275\",\n    \"ewbNumber\": \"181001234567\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/webhooks/ingest",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "webhooks", "ingest"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

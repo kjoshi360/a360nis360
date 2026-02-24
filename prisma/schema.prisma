@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GstRegistrationType {
+  regular
+  composition
+}
+
+enum JournalStatus {
+  draft
+  posted
+  reversed
+}
+
+enum ReturnStatus {
+  draft
+  filed
+}
+
+enum InputOutputType {
+  input
+  output
+}
+
+enum MovementType {
+  purchase
+  sale
+  adjustment
+}
+
+model Entity {
+  id                   String   @id @default(uuid()) @db.Uuid
+  name                 String
+  countryCode          String   @map("country_code") @db.VarChar(2)
+  baseCurrency         String   @map("base_currency") @db.VarChar(3)
+  financialYearStart   DateTime @map("financial_year_start") @db.Date
+  gstRegistrationType  GstRegistrationType? @map("gst_registration_type")
+  gstin                String?  @db.VarChar(15)
+  pan                  String?  @db.VarChar(10)
+  tan                  String?  @db.VarChar(10)
+  cin                  String?  @db.VarChar(21)
+  msmeRegistrationNo   String?  @map("msme_registration_no") @db.VarChar(50)
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  branches             Branch[]
+  users                User[]
+  chartOfAccounts      ChartOfAccount[]
+  journalEntries       JournalEntry[]
+  gstReturns           GstReturn[]
+  ewayBills            EwayBill[]
+  employees            Employee[]
+  products             Product[]
+  auditLogs            AuditLog[]
+  costCenters          CostCenter[]
+  budgets              Budget[]
+
+  @@map("entities")
+}
+
+model Branch {
+  id        String @id @default(uuid()) @db.Uuid
+  entityId  String @map("entity_id") @db.Uuid
+  name      String?
+  stateCode String? @map("state_code") @db.VarChar(2)
+  address   String?
+  gstin     String? @db.VarChar(15)
+  isDefault Boolean @default(false) @map("is_default")
+
+  entity         Entity         @relation(fields: [entityId], references: [id])
+  journalEntries JournalEntry[]
+
+  @@map("branches")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  entityId  String   @map("entity_id") @db.Uuid
+  name      String?
+  email     String?  @unique
+  role      String?  @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  entity         Entity         @relation(fields: [entityId], references: [id])
+  journalEntries JournalEntry[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model ChartOfAccount {
+  id               String  @id @default(uuid()) @db.Uuid
+  entityId         String  @map("entity_id") @db.Uuid
+  code             String? @db.VarChar(20)
+  name             String?
+  accountType      String? @map("account_type") @db.VarChar(50)
+  parentId         String? @map("parent_id") @db.Uuid
+  isTaxAccount     Boolean @default(false) @map("is_tax_account")
+  isControlAccount Boolean @default(false) @map("is_control_account")
+
+  entity       Entity        @relation(fields: [entityId], references: [id])
+  journalLines JournalLine[]
+  budgets      Budget[]
+
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id              String        @id @default(uuid()) @db.Uuid
+  entityId        String        @map("entity_id") @db.Uuid
+  branchId        String?       @map("branch_id") @db.Uuid
+  voucherNumber   String?       @map("voucher_number") @db.VarChar(50)
+  voucherType     String?       @map("voucher_type") @db.VarChar(50)
+  transactionDate DateTime?     @map("transaction_date") @db.Date
+  postingDate     DateTime?     @map("posting_date") @db.Date
+  status          JournalStatus @default(draft)
+  referenceNo     String?       @map("reference_no") @db.VarChar(100)
+  createdBy       String?       @map("created_by") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  entity      Entity       @relation(fields: [entityId], references: [id])
+  branch      Branch?      @relation(fields: [branchId], references: [id])
+  creator     User?        @relation(fields: [createdBy], references: [id])
+  journalLines JournalLine[]
+
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id            String   @id @default(uuid()) @db.Uuid
+  journalEntryId String  @map("journal_entry_id") @db.Uuid
+  accountId     String   @map("account_id") @db.Uuid
+  debit         Decimal  @default(0) @db.Decimal(18, 2)
+  credit        Decimal  @default(0) @db.Decimal(18, 2)
+  currency      String?  @db.VarChar(3)
+  exchangeRate  Decimal? @map("exchange_rate") @db.Decimal(12, 6)
+  taxCodeId     String?  @map("tax_code_id") @db.Uuid
+  costCenterId  String?  @map("cost_center_id") @db.Uuid
+
+  journalEntry     JournalEntry      @relation(fields: [journalEntryId], references: [id])
+  account          ChartOfAccount    @relation(fields: [accountId], references: [id])
+  taxTransactions  TaxTransaction[]
+
+  @@map("journal_lines")
+}
+
+model ExchangeRate {
+  id         String   @id @default(uuid()) @db.Uuid
+  currencyCode String @map("currency_code") @db.VarChar(3)
+  rateToBase Decimal  @map("rate_to_base") @db.Decimal(12, 6)
+  rateDate   DateTime @map("rate_date") @db.Date
+
+  @@map("exchange_rates")
+}
+
+model HsnMaster {
+  id          String   @id @default(uuid()) @db.Uuid
+  chapter     String?  @db.VarChar(2)
+  heading     String?  @db.VarChar(4)
+  subHeading  String?  @map("sub_heading") @db.VarChar(6)
+  code8Digit  String?  @map("code_8_digit") @db.VarChar(8)
+  description String?
+  gstRate     Decimal? @map("gst_rate") @db.Decimal(5, 2)
+  igstRate    Decimal? @map("igst_rate") @db.Decimal(5, 2)
+  cessRate    Decimal? @map("cess_rate") @db.Decimal(5, 2)
+  effectiveFrom DateTime? @map("effective_from") @db.Date
+  effectiveTo DateTime? @map("effective_to") @db.Date
+
+  products Product[]
+
+  @@map("hsn_master")
+}
+
+model SacMaster {
+  id            String   @id @default(uuid()) @db.Uuid
+  sacCode       String?  @map("sac_code") @db.VarChar(6)
+  description   String?
+  gstRate       Decimal? @map("gst_rate") @db.Decimal(5, 2)
+  reverseCharge Boolean  @default(false) @map("reverse_charge")
+
+  @@map("sac_master")
+}
+
+model TaxRule {
+  id                 String   @id @default(uuid()) @db.Uuid
+  countryCode        String?  @map("country_code") @db.VarChar(2)
+  taxType            String?  @map("tax_type") @db.VarChar(50)
+  taxComponent       String?  @map("tax_component") @db.VarChar(20)
+  rate               Decimal? @db.Decimal(5, 2)
+  reverseCharge      Boolean  @default(false) @map("reverse_charge")
+  inputCreditAllowed Boolean  @default(true) @map("input_credit_allowed")
+  effectiveFrom      DateTime? @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+
+  taxTransactions TaxTransaction[]
+
+  @@map("tax_rules")
+}
+
+model TaxTransaction {
+  id            String          @id @default(uuid()) @db.Uuid
+  journalLineId String          @map("journal_line_id") @db.Uuid
+  taxRuleId     String          @map("tax_rule_id") @db.Uuid
+  taxAmount     Decimal?        @map("tax_amount") @db.Decimal(18, 2)
+  inputOrOutput InputOutputType @map("input_or_output")
+  itcEligible   Boolean         @default(true) @map("itc_eligible")
+  returnPeriod  String?         @map("return_period") @db.VarChar(10)
+
+  journalLine JournalLine @relation(fields: [journalLineId], references: [id])
+  taxRule     TaxRule     @relation(fields: [taxRuleId], references: [id])
+
+  @@map("tax_transactions")
+}
+
+model GstReturn {
+  id                String       @id @default(uuid()) @db.Uuid
+  entityId          String       @map("entity_id") @db.Uuid
+  returnType        String?      @map("return_type") @db.VarChar(20)
+  period            String?      @db.VarChar(10)
+  jsonPayload       Json?        @map("json_payload")
+  status            ReturnStatus?
+  acknowledgementNo String?      @map("acknowledgement_no") @db.VarChar(50)
+  filedAt           DateTime?    @map("filed_at")
+
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@map("gst_returns")
+}
+
+model EwayBill {
+  id            String   @id @default(uuid()) @db.Uuid
+  invoiceId     String?  @map("invoice_id") @db.Uuid
+  entityId      String   @map("entity_id") @db.Uuid
+  gstinSender   String?  @map("gstin_sender") @db.VarChar(15)
+  gstinReceiver String?  @map("gstin_receiver") @db.VarChar(15)
+  transportMode String?  @map("transport_mode") @db.VarChar(50)
+  vehicleNumber String?  @map("vehicle_number") @db.VarChar(20)
+  distanceKm    Int?     @map("distance_km")
+  ewbNumber     String?  @map("ewb_number") @db.VarChar(20)
+  validUpto     DateTime? @map("valid_upto")
+  status        String?  @db.VarChar(20)
+  apiResponse   Json?    @map("api_response")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@map("eway_bills")
+}
+
+model TdsSection {
+  id              String   @id @default(uuid()) @db.Uuid
+  sectionCode     String?  @map("section_code") @db.VarChar(10)
+  description     String?
+  rate            Decimal? @db.Decimal(5, 2)
+  thresholdAmount Decimal? @map("threshold_amount") @db.Decimal(18, 2)
+
+  tdsTransactions TdsTransaction[]
+
+  @@map("tds_sections")
+}
+
+model TdsTransaction {
+  id            String   @id @default(uuid()) @db.Uuid
+  vendorId      String?  @map("vendor_id") @db.Uuid
+  sectionId     String   @map("section_id") @db.Uuid
+  baseAmount    Decimal? @map("base_amount") @db.Decimal(18, 2)
+  tdsAmount     Decimal? @map("tds_amount") @db.Decimal(18, 2)
+  depositDueDate DateTime? @map("deposit_due_date") @db.Date
+  returnQuarter String?  @map("return_quarter") @db.VarChar(10)
+
+  section TdsSection @relation(fields: [sectionId], references: [id])
+
+  @@map("tds_transactions")
+}
+
+model Employee {
+  id              String  @id @default(uuid()) @db.Uuid
+  entityId        String  @map("entity_id") @db.Uuid
+  name            String?
+  pan             String? @db.VarChar(10)
+  uan             String? @db.VarChar(20)
+  esicNo          String? @map("esic_no") @db.VarChar(20)
+  salaryStructure Json?   @map("salary_structure")
+
+  entity              Entity               @relation(fields: [entityId], references: [id])
+  payrollTransactions PayrollTransaction[]
+
+  @@map("employees")
+}
+
+model PayrollTransaction {
+  id               String   @id @default(uuid()) @db.Uuid
+  employeeId       String   @map("employee_id") @db.Uuid
+  grossSalary      Decimal? @map("gross_salary") @db.Decimal(18, 2)
+  pfEmployee       Decimal? @map("pf_employee") @db.Decimal(18, 2)
+  pfEmployer       Decimal? @map("pf_employer") @db.Decimal(18, 2)
+  esicEmployee     Decimal? @map("esic_employee") @db.Decimal(18, 2)
+  esicEmployer     Decimal? @map("esic_employer") @db.Decimal(18, 2)
+  professionalTax  Decimal? @map("professional_tax") @db.Decimal(18, 2)
+  tds              Decimal? @db.Decimal(18, 2)
+  netSalary        Decimal? @map("net_salary") @db.Decimal(18, 2)
+  payMonth         String?  @map("pay_month") @db.VarChar(7)
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("payroll_transactions")
+}
+
+model Product {
+  id            String  @id @default(uuid()) @db.Uuid
+  entityId      String  @map("entity_id") @db.Uuid
+  name          String?
+  hsnId         String? @map("hsn_id") @db.Uuid
+  unit          String? @db.VarChar(20)
+  stockTracking Boolean @default(true) @map("stock_tracking")
+
+  entity         Entity          @relation(fields: [entityId], references: [id])
+  hsn            HsnMaster?      @relation(fields: [hsnId], references: [id])
+  stockMovements StockMovement[]
+
+  @@map("products")
+}
+
+model StockMovement {
+  id           String       @id @default(uuid()) @db.Uuid
+  productId    String       @map("product_id") @db.Uuid
+  quantity     Decimal?     @db.Decimal(18, 2)
+  movementType MovementType @map("movement_type")
+  referenceId  String?      @map("reference_id") @db.Uuid
+  movementDate DateTime?    @map("movement_date") @db.Date
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("stock_movements")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  entityId  String   @map("entity_id") @db.Uuid
+  tableName String?  @map("table_name") @db.VarChar(100)
+  recordId  String?  @map("record_id") @db.Uuid
+  action    String?  @db.VarChar(20)
+  oldValue  Json?    @map("old_value")
+  newValue  Json?    @map("new_value")
+  userId    String?  @map("user_id") @db.Uuid
+  timestamp DateTime @default(now())
+
+  entity Entity @relation(fields: [entityId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model CostCenter {
+  id       String  @id @default(uuid()) @db.Uuid
+  entityId String  @map("entity_id") @db.Uuid
+  name     String?
+  parentId String? @map("parent_id") @db.Uuid
+
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@map("cost_centers")
+}
+
+model Budget {
+  id           String   @id @default(uuid()) @db.Uuid
+  entityId     String   @map("entity_id") @db.Uuid
+  accountId    String   @map("account_id") @db.Uuid
+  costCenterId String?  @map("cost_center_id") @db.Uuid
+  period       String?  @db.VarChar(7)
+  budgetAmount Decimal? @map("budget_amount") @db.Decimal(18, 2)
+
+  entity  Entity         @relation(fields: [entityId], references: [id])
+  account ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@map("budgets")
+}

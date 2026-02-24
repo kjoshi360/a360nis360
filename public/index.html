@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>a360nis360 Control Center</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>a360nis360 Frontend Control Center</h1>
+      <p>Manage core backend features: health checks, entity management, and webhook ingestion.</p>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>Health</h2>
+        <button id="healthBtn">Check API health</button>
+        <pre id="healthResult">Click to load status...</pre>
+      </section>
+
+      <section class="card">
+        <h2>Create Entity</h2>
+        <form id="entityForm">
+          <label>Name <input name="name" value="Acme India Pvt Ltd" required /></label>
+          <label>Country Code <input name="countryCode" value="IN" maxlength="2" required /></label>
+          <label>Base Currency <input name="baseCurrency" value="INR" maxlength="3" required /></label>
+          <label>Financial Year Start <input type="date" name="financialYearStart" value="2025-04-01" required /></label>
+          <label>GST Registration Type
+            <select name="gstRegistrationType">
+              <option value="regular">regular</option>
+              <option value="composition">composition</option>
+            </select>
+          </label>
+          <label>GSTIN <input name="gstin" value="22AAAAA0000A1Z5" maxlength="15" /></label>
+          <label>PAN <input name="pan" value="AAAAA0000A" maxlength="10" /></label>
+          <button type="submit">Create Entity</button>
+        </form>
+        <pre id="entityResult">Submit the form to create an entity.</pre>
+      </section>
+
+      <section class="card">
+        <h2>List Entities</h2>
+        <button id="listEntitiesBtn">Fetch entities</button>
+        <pre id="entitiesResult">No data loaded yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Webhook Ingest</h2>
+        <form id="webhookForm">
+          <label>Source <input name="source" value="gstn" required /></label>
+          <label>Event <input name="event" value="eway_bill.created" required /></label>
+          <label>Payload (JSON)
+            <textarea name="payload" rows="6">{
+  "entityId": "replace-with-entity-id",
+  "ewbNumber": "181001234567"
+}</textarea>
+          </label>
+          <button type="submit">Send Webhook</button>
+        </form>
+        <pre id="webhookResult">Submit to test webhook ingestion.</pre>
+      </section>
+    </main>
+
+    <footer>
+      <p>Backend endpoints used: <code>/health</code>, <code>/api/v1/entities</code>, <code>/api/v1/webhooks/ingest</code>.</p>
+    </footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
